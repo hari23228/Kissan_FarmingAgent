@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Schemes API Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+        .test { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .success { color: #22c55e; }
+        .error { color: #ef4444; }
+        pre { background: #f1f1f1; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        button { background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #2563eb; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Schemes & Subsidy API Tests</h1>
+    
+    <div class="test">
+        <h2>Test 1: Fetch Schemes</h2>
+        <button onclick="testFetchSchemes()">Run Test</button>
+        <div id="test1-result"></div>
+    </div>
+
+    <div class="test">
+        <h2>Test 2: Ask AI Question</h2>
+        <button onclick="testAskQuestion()">Run Test</button>
+        <div id="test2-result"></div>
+    </div>
+
+    <div class="test">
+        <h2>Test 3: Get Recommendations</h2>
+        <button onclick="testRecommendations()">Run Test</button>
+        <div id="test3-result"></div>
+    </div>
+
+    <div class="test">
+        <h2>Test 4: Compare Schemes</h2>
+        <button onclick="testCompare()">Run Test</button>
+        <div id="test4-result"></div>
+    </div>
+
+    <script>
+        async function testFetchSchemes() {
+            const resultDiv = document.getElementById('test1-result');
+            resultDiv.innerHTML = '<p>⏳ Testing...</p>';
+            
+            try {
+                const response = await fetch('/api/schemes?language=en&limit=5');
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Success!</p>
+                        <p><strong>Found:</strong> ${data.schemes?.length || 0} schemes</p>
+                        <p><strong>Source:</strong> ${data.source}</p>
+                        <p><strong>Total Available:</strong> ${data.total}</p>
+                        <pre>${JSON.stringify(data.schemes?.[0] || {}, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Failed: ${data.error}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testAskQuestion() {
+            const resultDiv = document.getElementById('test2-result');
+            resultDiv.innerHTML = '<p>⏳ Asking AI...</p>';
+            
+            try {
+                const response = await fetch('/api/schemes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question: 'What is PM-KISAN scheme?',
+                        language: 'en'
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ AI Responded!</p>
+                        <p><strong>Answer:</strong></p>
+                        <pre>${data.answer}</pre>
+                        <p><strong>Relevant Schemes:</strong> ${data.relevant_schemes?.length || 0}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Failed: ${data.error}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testRecommendations() {
+            const resultDiv = document.getElementById('test3-result');
+            resultDiv.innerHTML = '<p>⏳ Getting recommendations...</p>';
+            
+            try {
+                const response = await fetch('/api/schemes/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_profile: {
+                            state: 'Punjab',
+                            farmSize: 'small',
+                            crops: ['wheat', 'rice'],
+                            interests: ['subsidy', 'insurance']
+                        }
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Got Recommendations!</p>
+                        <p><strong>Total Schemes Analyzed:</strong> ${data.total_schemes}</p>
+                        <p><strong>Top Recommendations:</strong></p>
+                        <pre>${JSON.stringify(data.recommendations, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Failed: ${data.error}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testCompare() {
+            const resultDiv = document.getElementById('test4-result');
+            resultDiv.innerHTML = '<p>⏳ Comparing schemes...</p>';
+            
+            try {
+                // First fetch some schemes to get IDs
+                const fetchResponse = await fetch('/api/schemes?limit=5');
+                const fetchData = await fetchResponse.json();
+                
+                if (!fetchData.success || !fetchData.schemes || fetchData.schemes.length < 2) {
+                    resultDiv.innerHTML = '<p class="error">❌ Not enough schemes to compare</p>';
+                    return;
+                }
+                
+                const schemeIds = fetchData.schemes.slice(0, 2).map(s => s.id);
+                
+                const response = await fetch('/api/schemes/compare', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scheme_ids: schemeIds,
+                        user_context: 'small farmer with 5 acres growing wheat'
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Comparison Complete!</p>
+                        <p><strong>AI Analysis:</strong></p>
+                        <pre>${data.comparison}</pre>
+                        <p><strong>Schemes Compared:</strong> ${data.schemes.map(s => s.title).join(', ')}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Failed: ${data.error}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
