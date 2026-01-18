@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Leaf } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useTranslatedText } from "@/lib/translation-utils"
+import { translationKeys } from "@/lib/translation-utils"
+import { useLanguage } from "@/lib/language-context"
 
 interface LoginScreenProps {
   language: string
@@ -15,6 +18,7 @@ type TabType = "login" | "signup"
 type AuthMethod = "phone" | "email"
 
 export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
+  const { language: currentLang } = useLanguage()
   const [activeTab, setActiveTab] = useState<TabType>("login")
   const [authMethod, setAuthMethod] = useState<AuthMethod>("email")
   const [phone, setPhone] = useState("")
@@ -28,6 +32,37 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
+  // Translated text
+  const loginText = useTranslatedText(translationKeys.auth.login)
+  const signupText = useTranslatedText(translationKeys.auth.signup)
+  const emailText = useTranslatedText(translationKeys.auth.email)
+  const passwordText = useTranslatedText(translationKeys.auth.password)
+  const phoneText = useTranslatedText(translationKeys.auth.phone)
+  const nameText = useTranslatedText(translationKeys.auth.name)
+  const continueText = useTranslatedText(translationKeys.common.continue)
+  const loadingText = useTranslatedText(translationKeys.common.loading)
+  const newUserText = useTranslatedText('New user')
+  const phoneOTPText = useTranslatedText('Phone OTP')
+  const enterOTPText = useTranslatedText(translationKeys.auth.enterOTP)
+  const verifyOTPText = useTranslatedText(translationKeys.auth.verifyOTP)
+  const errorText = useTranslatedText(translationKeys.common.error)
+  const successText = useTranslatedText(translationKeys.common.success)
+  const stateText = useTranslatedText('State')
+  const districtText = useTranslatedText('District')
+  const selectStateText = useTranslatedText('Select state')
+  const selectDistrictText = useTranslatedText('Select district')
+  const getOTPText = useTranslatedText('Get OTP')
+  const processingText = useTranslatedText('Processing...')
+  const verifyingText = useTranslatedText('Verifying...')
+  const verifyContinueText = useTranslatedText('Verify & Continue')
+  const changePhoneText = useTranslatedText('Change phone number')
+  const verifyOTPHeaderText = useTranslatedText('Verify OTP')
+  const otpSentToText = useTranslatedText('Enter the OTP sent to')
+  const enterOTPPlaceholderText = useTranslatedText('Enter OTP')
+  const consentText = useTranslatedText('I agree to use this app for information only. I will confirm with local experts if needed.')
+  const yourNameText = useTranslatedText('Your name (optional)')
+  const enterNameText = useTranslatedText('Enter your name')
+
   const handleGetOTP = async () => {
     if (phone.length !== 10) return
     
@@ -35,7 +70,10 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
     try {
       const response = await fetch("/api/auth/send-otp", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept-Language": currentLang
+        },
         body: JSON.stringify({ phone: `+91${phone}` }),
       })
 
@@ -203,7 +241,7 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Login
+                {loginText}
               </button>
               <button
                 onClick={() => setActiveTab("signup")}
@@ -213,7 +251,7 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                New user
+                {newUserText}
               </button>
             </div>
 
@@ -230,7 +268,7 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Phone OTP
+                {phoneOTPText}
               </button>
               <button
                 onClick={() => {
@@ -243,7 +281,7 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Email
+                {emailText}
               </button>
             </div>
 
@@ -252,10 +290,10 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
               {activeTab === "signup" && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Your name (optional)</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">{yourNameText}</label>
                     <Input
                       type="text"
-                      placeholder="Enter your name"
+                      placeholder={enterNameText}
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="h-12"
@@ -263,13 +301,13 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">State</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">{stateText}</label>
                     <select
                       value={state}
                       onChange={(e) => setState(e.target.value)}
                       className="w-full h-12 px-3 border border-border rounded-lg bg-input text-foreground"
                     >
-                      <option value="">Select state</option>
+                      <option value="">{selectStateText}</option>
                       <option value="tamil_nadu">Tamil Nadu</option>
                       <option value="karnataka">Karnataka</option>
                       <option value="maharashtra">Maharashtra</option>
@@ -278,13 +316,13 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">District</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">{districtText}</label>
                     <select
                       value={district}
                       onChange={(e) => setDistrict(e.target.value)}
                       className="w-full h-12 px-3 border border-border rounded-lg bg-input text-foreground"
                     >
-                      <option value="">Select district</option>
+                      <option value="">{selectDistrictText}</option>
                       <option value="coimbatore">Coimbatore</option>
                       <option value="salem">Salem</option>
                       <option value="erode">Erode</option>
@@ -295,10 +333,10 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
 
               {authMethod === "phone" ? (
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Phone number</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">{phoneText}</label>
                   <Input
                     type="tel"
-                    placeholder="10 digit mobile number"
+                    placeholder={phoneText}
                     maxLength={10}
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
@@ -308,20 +346,20 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
               ) : (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Email</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">{emailText}</label>
                     <Input
                       type="email"
-                      placeholder="your@email.com"
+                      placeholder={emailText}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="h-12"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">Password</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">{passwordText}</label>
                     <Input
                       type="password"
-                      placeholder="Enter password"
+                      placeholder={passwordText}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="h-12"
@@ -334,7 +372,7 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
                 <div className="flex items-start gap-2">
                   <input type="checkbox" id="consent" className="mt-1" />
                   <label htmlFor="consent" className="text-xs text-muted-foreground">
-                    I agree to use this app for information only. I will confirm with local experts if needed.
+                    {consentText}
                   </label>
                 </div>
               )}
@@ -349,21 +387,21 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
               }
               className="w-full h-12 mt-8 text-base font-medium bg-primary hover:bg-primary/90"
             >
-              {loading ? "Processing..." : authMethod === "phone" ? "Get OTP" : activeTab === "signup" ? "Sign Up" : "Login"}
+              {loading ? processingText : authMethod === "phone" ? getOTPText : activeTab === "signup" ? signupText : loginText}
             </Button>
           </>
         ) : (
           <>
             {/* OTP Verification */}
             <div className="text-center mb-8">
-              <h2 className="text-xl font-bold mb-2">Verify OTP</h2>
-              <p className="text-sm text-muted-foreground">Enter the OTP sent to {phone}</p>
+              <h2 className="text-xl font-bold mb-2">{verifyOTPHeaderText}</h2>
+              <p className="text-sm text-muted-foreground">{otpSentToText} {phone}</p>
             </div>
 
             <div className="space-y-4">
               <Input
                 type="text"
-                placeholder="Enter OTP"
+                placeholder={enterOTPPlaceholderText}
                 maxLength={6}
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
@@ -375,11 +413,11 @@ export default function LoginScreen({ language, onLogin }: LoginScreenProps) {
                 disabled={otp.length < 4 || loading}
                 className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90"
               >
-                {loading ? "Verifying..." : "Verify & Continue"}
+                {loading ? verifyingText : verifyContinueText}
               </Button>
 
               <button onClick={() => setShowOTP(false)} className="w-full text-sm text-primary hover:underline py-2">
-                Change phone number
+                {changePhoneText}
               </button>
             </div>
           </>

@@ -3,6 +3,10 @@
 import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Leaf, User, Mic, LeafIcon, TrendingUp, FileText, MessageCircle } from "lucide-react"
+import { useTranslatedText } from "@/lib/translation-utils"
+import { translationKeys } from "@/lib/translation-utils"
+import { useLanguage } from "@/lib/language-context"
+import { LanguageSwitcher } from "@/components/language-switcher"
 
 interface HomeScreenProps {
   language: string
@@ -12,38 +16,52 @@ interface HomeScreenProps {
 }
 
 export default function HomeScreen({ language, user, onNavigate, onLogout }: HomeScreenProps) {
-  const greeting = language === "ta" ? "வணக்கம்" : language === "hi" ? "नमस्ते" : "Hello"
+  const { language: currentLang } = useLanguage()
   const userName = user?.name || "Farmer"
+
+  // Translated text
+  const greetingText = useTranslatedText(translationKeys.home.greeting)
+  const diseaseTitle = useTranslatedText(translationKeys.features.diseaseHelp)
+  const diseaseDesc = useTranslatedText(translationKeys.features.diseaseSubtitle)
+  const pricesTitle = useTranslatedText(translationKeys.features.marketPrices)
+  const pricesDesc = useTranslatedText(translationKeys.features.pricesSubtitle)
+  const schemesTitle = useTranslatedText(translationKeys.features.govSchemes)
+  const schemesDesc = useTranslatedText(translationKeys.features.schemesSubtitle)
+  const assistantTitle = useTranslatedText(translationKeys.features.assistant)
+  const assistantDesc = useTranslatedText(translationKeys.features.assistantSubtitle)
+  const recentActivityText = useTranslatedText('Recent activity')
+  const noQueriesText = useTranslatedText('No recent queries yet')
+  const startCheckingText = useTranslatedText('Start by checking your crop health!')
 
   const features = [
     {
       id: "disease",
-      title: "Crop Disease Help",
-      description: "Diagnose plant diseases from photos",
+      title: diseaseTitle,
+      description: diseaseDesc,
       icon: LeafIcon,
       color: "text-primary",
       bgColor: "bg-primary/10",
     },
     {
       id: "prices",
-      title: "Market Prices & Selling Advice",
-      description: "Real-time mandi prices and recommendations",
+      title: pricesTitle,
+      description: pricesDesc,
       icon: TrendingUp,
       color: "text-secondary",
       bgColor: "bg-secondary/10",
     },
     {
       id: "schemes",
-      title: "Schemes & Subsidies",
-      description: "Government benefits for your farm",
+      title: schemesTitle,
+      description: schemesDesc,
       icon: FileText,
       color: "text-accent",
       bgColor: "bg-accent/10",
     },
     {
       id: "assistant",
-      title: "Ask Kisan Assistant",
-      description: "Voice-first AI chat for all questions",
+      title: assistantTitle,
+      description: assistantDesc,
       icon: MessageCircle,
       color: "text-primary",
       bgColor: "bg-primary/10",
@@ -75,17 +93,25 @@ export default function HomeScreen({ language, user, onNavigate, onLogout }: Hom
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            {greeting}, {userName}!
+            {greetingText}, {userName}!
           </motion.p>
         </div>
-        <motion.button 
-          onClick={() => onNavigate("profile")} 
-          className="p-3 hover:bg-primary-foreground/20 rounded-full transition-colors"
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <User className="w-6 h-6" />
-        </motion.button>
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher 
+            variant="ghost" 
+            size="sm" 
+            showText={false}
+            className="text-primary-foreground hover:bg-primary-foreground/20"
+          />
+          <motion.button 
+            onClick={() => onNavigate("profile")} 
+            className="p-3 hover:bg-primary-foreground/20 rounded-full transition-colors"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <User className="w-6 h-6" />
+          </motion.button>
+        </div>
       </motion.div>
 
       {/* Feature Cards */}
@@ -134,12 +160,12 @@ export default function HomeScreen({ language, user, onNavigate, onLogout }: Hom
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8, duration: 0.5 }}
       >
-        <h2 className="font-bold text-lg text-foreground mb-4">Recent activity</h2>
+        <h2 className="font-bold text-lg text-foreground mb-4">{recentActivityText}</h2>
         <Card className="p-6 text-center border-2 border-dashed">
           <div className="text-muted-foreground py-4">
             <Leaf className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">No recent queries yet</p>
-            <p className="text-xs mt-1">Start by checking your crop health!</p>
+            <p className="text-sm">{noQueriesText}</p>
+            <p className="text-xs mt-1">{startCheckingText}</p>
           </div>
         </Card>
       </motion.div>

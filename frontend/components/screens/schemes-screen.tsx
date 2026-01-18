@@ -7,6 +7,9 @@ import { ChevronLeft, Mic, Loader2, MessageSquare, ExternalLink, Sparkles } from
 import { useState } from "react"
 import { SchemeChatDialog } from "@/components/scheme-chat-dialog"
 import { motion, AnimatePresence } from "framer-motion"
+import { useTranslatedText } from "@/lib/translation-utils"
+import { useLanguage } from "@/lib/language-context"
+import { translatingAiService } from "@/lib/services/translating-ai"
 
 interface SchemesScreenProps {
   language: string
@@ -55,6 +58,7 @@ const CATEGORIES = [
 ]
 
 export default function SchemesScreen({ language, user, onNavigate }: SchemesScreenProps) {
+  const { language: currentLang } = useLanguage()
   const [step, setStep] = useState<SchemesStep>("search")
   const [query, setQuery] = useState("")
   const [selectedState, setSelectedState] = useState(user?.state || "All India")
@@ -64,6 +68,53 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [chatOpen, setChatOpen] = useState(false)
+
+  // Translation hooks
+  const headerText = useTranslatedText('Schemes & Subsidies')
+  const findSchemesText = useTranslatedText('Find schemes')
+  const searchPlaceholderText = useTranslatedText('Drip irrigation subsidy, PM Kisan...')
+  const selectStateText = useTranslatedText('Select State')
+  const allIndiaText = useTranslatedText('All India')
+  const browseCategoryText = useTranslatedText('Browse by category')
+  const findButtonText = useTranslatedText('Find Schemes')
+  const loadingText = useTranslatedText('Loading...')
+  const noSchemesText = useTranslatedText('No schemes found')
+  const tryDifferentText = useTranslatedText('Try different search terms or filters')
+  const inSimpleWordsText = useTranslatedText('In simple words')
+  const whoCanApplyText = useTranslatedText('Who can apply?')
+  const benefitsText = useTranslatedText('Benefits')
+  const documentsNeededText = useTranslatedText('Documents needed')
+  const howToApplyText = useTranslatedText('How to apply')
+  const lastUpdatedText = useTranslatedText('Last updated')
+  const officialLinkText = useTranslatedText('Official Link')
+  const askMoreText = useTranslatedText('Ask about this scheme')
+  const viewDetailsText = useTranslatedText('View details')
+  const backToResultsText = useTranslatedText('Back to results')
+  
+  // Category translations
+  const allSchemesText = useTranslatedText('All Schemes')
+  const irrigationText = useTranslatedText('Irrigation')
+  const seedsFertilizersText = useTranslatedText('Seeds & Fertilizers')
+  const machineryText = useTranslatedText('Machinery')
+  const insuranceText = useTranslatedText('Insurance')
+  const soilHealthText = useTranslatedText('Soil Health')
+  const creditLoansText = useTranslatedText('Credit & Loans')
+  const organicFarmingText = useTranslatedText('Organic Farming')
+
+  // Get translated category name
+  const getCategoryName = (catId: string) => {
+    switch (catId) {
+      case 'all': return allSchemesText
+      case 'irrigation': return irrigationText
+      case 'seeds': return seedsFertilizersText
+      case 'machinery': return machineryText
+      case 'insurance': return insuranceText
+      case 'soil': return soilHealthText
+      case 'credit': return creditLoansText
+      case 'organic': return organicFarmingText
+      default: return CATEGORIES.find(c => c.id === catId)?.name || catId
+    }
+  }
 
   const handleSearch = async () => {
     setLoading(true)
@@ -109,7 +160,20 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
         link: scheme.link || scheme.url || scheme.website,
       }))
 
-      setSchemes(transformedSchemes)
+      // Translate schemes if user's language is not English
+      let finalSchemes = transformedSchemes
+      if (currentLang !== 'en' && transformedSchemes.length > 0) {
+        try {
+          console.log(`Translating ${transformedSchemes.length} schemes to ${currentLang}...`)
+          finalSchemes = await translatingAiService.translateSchemes(transformedSchemes, currentLang)
+          console.log('✅ Schemes translated successfully')
+        } catch (error) {
+          console.error('Error translating schemes:', error)
+          // Keep original schemes if translation fails
+        }
+      }
+
+      setSchemes(finalSchemes)
       setStep("results")
     } catch (err) {
       console.error('❌ Error fetching schemes:', err)
@@ -157,7 +221,20 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
         link: scheme.link || scheme.url,
       }))
 
-      setSchemes(transformedSchemes)
+      // Translate schemes if user's language is not English
+      let finalSchemes = transformedSchemes
+      if (currentLang !== 'en' && transformedSchemes.length > 0) {
+        try {
+          console.log(`Translating ${transformedSchemes.length} schemes to ${currentLang}...`)
+          finalSchemes = await translatingAiService.translateSchemes(transformedSchemes, currentLang)
+          console.log('✅ Schemes translated successfully')
+        } catch (error) {
+          console.error('Error translating schemes:', error)
+          // Keep original schemes if translation fails
+        }
+      }
+
+      setSchemes(finalSchemes)
       setStep("results")
     } catch (err) {
       console.error('❌ Error fetching schemes by category:', err)
@@ -169,6 +246,23 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
 
   const handleAskAI = () => {
     setChatOpen(true)
+  }
+
+  // Handle scheme selection and translate if needed
+  const handleSchemeSelect = async (scheme: Scheme) => {
+    setSelectedScheme(scheme)
+    setStep("details")
+    
+    // Translate scheme content if not in English
+    if (currentLang !== 'en') {
+      try {
+        const translated = await translatingAiService.translateScheme(scheme, currentLang)
+        setSelectedScheme(translated)
+      } catch (error) {
+        console.error('Error translating scheme:', error)
+        // Keep original scheme if translation fails
+      }
+    }
   }
 
   if (step === "details" && selectedScheme) {
@@ -239,7 +333,7 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
             >
               <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-primary" />
-                In simple words
+                {inSimpleWordsText}
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{selectedScheme.description}</p>
             </motion.div>
@@ -250,7 +344,7 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
               transition={{ duration: 0.4, delay: 0.3 }}
               className="p-4 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20"
             >
-              <h3 className="font-bold text-foreground mb-3">Who can apply?</h3>
+              <h3 className="font-bold text-foreground mb-3">{whoCanApplyText}</h3>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{selectedScheme.eligibility}</p>
             </motion.div>
 
@@ -260,7 +354,7 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
               transition={{ duration: 0.4, delay: 0.4 }}
               className="p-4 rounded-xl bg-gradient-to-br from-secondary/5 to-secondary/10 border border-secondary/20"
             >
-              <h3 className="font-bold text-foreground mb-3">Benefits</h3>
+              <h3 className="font-bold text-foreground mb-3">{benefitsText}</h3>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{selectedScheme.benefits}</p>
             </motion.div>
 
@@ -271,7 +365,7 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
                 transition={{ duration: 0.4, delay: 0.5 }}
                 className="p-4 rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 border border-border/50"
               >
-                <h3 className="font-bold text-foreground mb-3">Documents needed</h3>
+                <h3 className="font-bold text-foreground mb-3">{documentsNeededText}</h3>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{selectedScheme.documents_required}</p>
               </motion.div>
             )}
@@ -283,7 +377,7 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
                 transition={{ duration: 0.4, delay: 0.6 }}
                 className="p-4 rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 border border-border/50"
               >
-                <h3 className="font-bold text-foreground mb-3">How to apply</h3>
+                <h3 className="font-bold text-foreground mb-3">{howToApplyText}</h3>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{selectedScheme.how_to_apply}</p>
               </motion.div>
             )}
@@ -433,13 +527,10 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
                 >
                   <Card
                     className="p-4 cursor-pointer hover:shadow-lg transition-all duration-200 border-border/50 bg-gradient-to-br from-background to-muted/20"
-                    onClick={() => {
-                      setSelectedScheme(scheme)
-                      setStep("details")
-                    }}
+                    onClick={() => handleSchemeSelect(scheme)}
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-bold text-foreground flex-1 line-clamp-2">{scheme.name}</h3>
+                      <h3 className="font-bold text-foreground flex-1 line-clamp-2">{scheme.title}</h3>
                       {scheme.category && (
                         <motion.span 
                           className="text-xs font-bold text-primary ml-2 flex-shrink-0 bg-gradient-to-r from-primary/10 to-primary/20 px-2 py-1 rounded"
@@ -447,7 +538,7 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
                           animate={{ scale: 1 }}
                           transition={{ delay: index * 0.05 + 0.2 }}
                         >
-                          {scheme.category}
+                          {getCategoryName(scheme.category)}
                         </motion.span>
                       )}
                     </div>
@@ -458,7 +549,7 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
                       <p className="text-xs text-muted-foreground mb-2">📍 {scheme.state}</p>
                     )}
                     <Button variant="outline" className="w-full text-xs h-9 bg-transparent hover:bg-primary/5 transition-colors">
-                      View details
+                      {viewDetailsText}
                     </Button>
                   </Card>
                 </motion.div>
@@ -487,7 +578,7 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
         >
           <ChevronLeft className="w-6 h-6" />
         </motion.button>
-        <h1 className="text-xl font-bold">Schemes & Subsidies</h1>
+        <h1 className="text-xl font-bold">{headerText}</h1>
       </motion.div>
 
       {/* Content */}
@@ -498,10 +589,10 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <label className="block text-sm font-medium text-foreground mb-2">Find schemes</label>
+          <label className="block text-sm font-medium text-foreground mb-2">{findSchemesText}</label>
           <div className="relative">
             <Input
-              placeholder="Drip irrigation subsidy, PM Kisan..."
+              placeholder={searchPlaceholderText}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -523,7 +614,7 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.2 }}
         >
-          <label className="block text-sm font-medium text-foreground mb-2">Select State</label>
+          <label className="block text-sm font-medium text-foreground mb-2">{selectStateText}</label>
           <select
             value={selectedState}
             onChange={(e) => setSelectedState(e.target.value)}
@@ -541,7 +632,7 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.3 }}
         >
-          <label className="block text-sm font-medium text-foreground mb-3">Browse by category</label>
+          <label className="block text-sm font-medium text-foreground mb-3">{browseCategoryText}</label>
           <div className="grid grid-cols-2 gap-2">
             {CATEGORIES.map((cat, index) => (
               <motion.button
@@ -560,7 +651,7 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
                 whileTap={{ scale: 0.95 }}
               >
                 <span>{cat.emoji}</span>
-                <span className="text-left">{cat.name}</span>
+                <span className="text-left">{getCategoryName(cat.id)}</span>
               </motion.button>
             ))}
           </div>
@@ -597,12 +688,12 @@ export default function SchemesScreen({ language, user, onNavigate }: SchemesScr
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Fetching from Government API...
+                {loadingText}
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4 mr-2" />
-                Find Schemes
+                {findButtonText}
               </>
             )}
           </Button>

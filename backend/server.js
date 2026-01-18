@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const { translationMiddleware } = require('./utils/translation');
 
 // Load environment variables
 dotenv.config();
@@ -11,6 +12,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Translation middleware - applies to all routes
+app.use(translationMiddleware);
 
 // Routes
 app.get('/', (req, res) => {

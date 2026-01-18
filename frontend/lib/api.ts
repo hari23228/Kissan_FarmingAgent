@@ -7,6 +7,24 @@ import { createClient } from './supabase/client'
 
 class ApiService {
   private supabase = createClient()
+  private currentLanguage: string = 'en'
+
+  /**
+   * Set the current language for API requests
+   */
+  setLanguage(language: string) {
+    this.currentLanguage = language
+  }
+
+  /**
+   * Get headers with language preference
+   */
+  private getHeaders(): HeadersInit {
+    return {
+      'Content-Type': 'application/json',
+      'Accept-Language': this.currentLanguage,
+    }
+  }
 
   // ============================================
   // AUTH APIs
@@ -16,7 +34,7 @@ class ApiService {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getHeaders(),
         body: JSON.stringify(data),
       })
       return await response.json()
@@ -30,7 +48,7 @@ class ApiService {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getHeaders(),
         body: JSON.stringify({ email, password }),
       })
       return await response.json()
@@ -44,6 +62,7 @@ class ApiService {
     try {
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
+        headers: this.getHeaders(),
       })
       return await response.json()
     } catch (error) {
@@ -63,7 +82,9 @@ class ApiService {
 
   async getProfile() {
     try {
-      const response = await fetch('/api/profile')
+      const response = await fetch('/api/profile', {
+        headers: this.getHeaders(),
+      })
       return await response.json()
     } catch (error) {
       console.error('Get profile error:', error)
@@ -75,7 +96,7 @@ class ApiService {
     try {
       const response = await fetch('/api/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getHeaders(),
         body: JSON.stringify(data),
       })
       return await response.json()
@@ -93,7 +114,7 @@ class ApiService {
     try {
       const response = await fetch('/api/disease', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.getHeaders(),
         body: JSON.stringify(data),
       })
       return await response.json()

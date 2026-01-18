@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useLanguage } from "@/lib/language-context"
 import LanguageScreen from "@/components/screens/language-screen"
 import LoginScreen from "@/components/screens/login-screen"
 import ProfileSetupScreen from "@/components/screens/profile-setup-screen"
@@ -24,16 +25,15 @@ type AppScreen =
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>("language")
-  const [language, setLanguage] = useState<string>("en")
+  const { language } = useLanguage() // Use global language context
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState<any>(null)
 
   // Initialize from local storage
   useEffect(() => {
-    const savedLanguage = localStorage.getItem("kisan_language") || "en"
+    // Check if user has already selected a language
+    const hasLanguagePreference = localStorage.getItem("kisan_app_language")
     const savedUser = localStorage.getItem("kisan_user")
-
-    setLanguage(savedLanguage)
 
     if (savedUser) {
       const userData = JSON.parse(savedUser)
@@ -44,14 +44,17 @@ export default function App() {
       } else {
         setCurrentScreen("home")
       }
+    } else if (hasLanguagePreference) {
+      // Language already selected, skip to login
+      setCurrentScreen("login")
     } else {
+      // First time user, show language selection
       setCurrentScreen("language")
     }
   }, [])
 
   const handleLanguageSelect = (lang: string) => {
-    setLanguage(lang)
-    localStorage.setItem("kisan_language", lang)
+    // Language is already set in the context by LanguageScreen component
     setCurrentScreen("login")
   }
 

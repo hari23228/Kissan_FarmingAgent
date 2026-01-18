@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Sprout, CheckCircle2 } from "lucide-react"
+import { useLanguage } from "@/lib/language-context"
+import { SupportedLanguage } from "@/lib/services/azure-translator"
 
 interface LanguageScreenProps {
   onSelect: (language: string) => void
@@ -18,6 +20,17 @@ const languages = [
 
 export default function LanguageScreen({ onSelect }: LanguageScreenProps) {
   const [selectedLanguage, setSelectedLanguage] = useState<string>("")
+  const { setLanguage, isChangingLanguage } = useLanguage()
+
+  const handleContinue = async () => {
+    if (!selectedLanguage) return
+    
+    // Set language in the global context (persists to localStorage and Supabase)
+    await setLanguage(selectedLanguage as SupportedLanguage)
+    
+    // Call the parent callback
+    onSelect(selectedLanguage)
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-4">
@@ -118,14 +131,14 @@ export default function LanguageScreen({ onSelect }: LanguageScreenProps) {
           <Button
             size="lg"
             className="w-full text-lg h-14 rounded-xl font-semibold shadow-lg transition-all"
-            disabled={!selectedLanguage}
-            onClick={() => selectedLanguage && onSelect(selectedLanguage)}
+            disabled={!selectedLanguage || isChangingLanguage}
+            onClick={handleContinue}
           >
             <motion.span
               animate={selectedLanguage ? { scale: [1, 1.05, 1] } : {}}
               transition={{ duration: 0.3 }}
             >
-              Continue → जारी रखें
+              {isChangingLanguage ? "Loading..." : "Continue → जारी रखें"}
             </motion.span>
           </Button>
         </motion.div>

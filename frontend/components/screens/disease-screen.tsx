@@ -4,6 +4,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ChevronLeft, Mic, Upload, Camera } from "lucide-react"
+import { useTranslatedText } from "@/lib/translation-utils"
+import { translationKeys } from "@/lib/translation-utils"
+import { useLanguage } from "@/lib/language-context"
 
 interface DiseaseScreenProps {
   language: string
@@ -14,11 +17,35 @@ interface DiseaseScreenProps {
 type DiseaseStep = "input" | "result"
 
 export default function DiseaseScreen({ language, user, onNavigate }: DiseaseScreenProps) {
+  const { language: currentLang } = useLanguage()
   const [step, setStep] = useState<DiseaseStep>("input")
   const [crop, setCrop] = useState("")
   const [stage, setStage] = useState("")
   const [description, setDescription] = useState("")
   const [image, setImage] = useState<string | null>(null)
+
+  // Translated text
+  const diseaseAnalysisText = useTranslatedText('Disease Analysis')
+  const checkCropHealthText = useTranslatedText('Check Crop Health')
+  const whichCropText = useTranslatedText('Which crop?')
+  const growthStageText = useTranslatedText('Growth stage?')
+  const uploadPhotoText = useTranslatedText('Upload photo of affected plant')
+  const takePhotoText = useTranslatedText('Take photo')
+  const chooseFromGalleryText = useTranslatedText('Choose from gallery')
+  const describeSymptomText = useTranslatedText('Describe symptom (optional)')
+  const browningLeavesText = useTranslatedText('e.g., browning leaves, spots on stem')
+  const speakSymptomText = useTranslatedText('Or, speak your symptom')
+  const analyzeNowText = useTranslatedText('Analyze now')
+  const probableDiagnosisText = useTranslatedText('Probable diagnosis')
+  const whatHappeningText = useTranslatedText('What is happening')
+  const whatDoNowText = useTranslatedText('What you should do now')
+  const preventionFutureText = useTranslatedText('Prevention for future')
+  const safetyTipsText = useTranslatedText('Safety tips')
+  const readAloudText = useTranslatedText('Read aloud')
+  const simplerWordsText = useTranslatedText('Simpler words')
+  const saveReportText = useTranslatedText('Save report')
+  const askMoreText = useTranslatedText('Ask more')
+  const checkNewText = useTranslatedText('Check new')
 
   const crops = ["Tomato", "Paddy", "Wheat", "Cotton", "Sugarcane", "Other"]
   const stages = ["Seedling", "Vegetative", "Flowering", "Fruiting", "Harvest"]
@@ -37,7 +64,7 @@ export default function DiseaseScreen({ language, user, onNavigate }: DiseaseScr
           <button onClick={() => setStep("input")} className="hover:bg-primary/80 p-1 rounded transition-colors">
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-xl font-bold">Disease Analysis</h1>
+          <h1 className="text-xl font-bold">{diseaseAnalysisText}</h1>
         </div>
 
         {/* Result */}
@@ -46,7 +73,7 @@ export default function DiseaseScreen({ language, user, onNavigate }: DiseaseScr
           <Card className="p-6 border-l-4 border-l-primary bg-primary/5">
             <div className="mb-4">
               <span className="inline-block bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full">
-                Probable diagnosis
+                {probableDiagnosisText}
               </span>
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">Early Blight</h2>
@@ -55,7 +82,7 @@ export default function DiseaseScreen({ language, user, onNavigate }: DiseaseScr
 
           {/* Sections */}
           <div>
-            <h3 className="font-bold text-foreground mb-3">What is happening</h3>
+            <h3 className="font-bold text-foreground mb-3">{whatHappeningText}</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>• Brown or black lesions appear on lower leaves</li>
               <li>• Concentric rings form around affected areas</li>
@@ -64,7 +91,7 @@ export default function DiseaseScreen({ language, user, onNavigate }: DiseaseScr
           </div>
 
           <div>
-            <h3 className="font-bold text-foreground mb-3">What you should do now</h3>
+            <h3 className="font-bold text-foreground mb-3">{whatDoNowText}</h3>
             <ol className="space-y-2 text-sm text-muted-foreground">
               <li>1. Remove affected leaves with pruning shears</li>
               <li>2. Apply copper fungicide or organic alternatives</li>
@@ -74,7 +101,7 @@ export default function DiseaseScreen({ language, user, onNavigate }: DiseaseScr
           </div>
 
           <div>
-            <h3 className="font-bold text-foreground mb-3">Prevention for future</h3>
+            <h3 className="font-bold text-foreground mb-3">{preventionFutureText}</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>• Plant resistant varieties</li>
               <li>• Practice crop rotation</li>
@@ -83,7 +110,7 @@ export default function DiseaseScreen({ language, user, onNavigate }: DiseaseScr
           </div>
 
           <div>
-            <h3 className="font-bold text-foreground mb-3">Safety tips</h3>
+            <h3 className="font-bold text-foreground mb-3">{safetyTipsText}</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>• Wear gloves when handling infected plants</li>
               <li>• Wash hands after handling</li>
@@ -93,14 +120,14 @@ export default function DiseaseScreen({ language, user, onNavigate }: DiseaseScr
 
           {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline">Read aloud</Button>
-            <Button variant="outline">Simpler words</Button>
+            <Button variant="outline">{readAloudText}</Button>
+            <Button variant="outline">{simplerWordsText}</Button>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline">Ask follow-up</Button>
+            <Button variant="outline">{askMoreText}</Button>
             <Button onClick={() => setStep("input")} className="bg-primary hover:bg-primary/90">
-              Check another
+              {checkNewText}
             </Button>
           </div>
         </div>
@@ -115,16 +142,16 @@ export default function DiseaseScreen({ language, user, onNavigate }: DiseaseScr
         <button onClick={() => onNavigate("home")} className="hover:bg-primary/80 p-1 rounded transition-colors">
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-xl font-bold">Crop Disease Help</h1>
+        <h1 className="text-xl font-bold">{checkCropHealthText}</h1>
       </div>
 
       {/* Content */}
       <div className="px-6 py-8 space-y-6 max-w-md mx-auto">
-        <p className="text-sm text-muted-foreground">Take a clear photo of the affected part of the plant.</p>
+        <p className="text-sm text-muted-foreground">{uploadPhotoText}</p>
 
-        {/* Image Upload */}
+        {/* Crop Selection */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-3">Plant photo</label>
+          <label className="block text-sm font-bold text-foreground mb-2">{whichCropText}</label>
           {image ? (
             <div className="relative w-full h-48 bg-muted rounded-lg overflow-hidden">
               <img src={image || "/placeholder.svg"} alt="Plant" className="w-full h-full object-cover" />
@@ -139,7 +166,7 @@ export default function DiseaseScreen({ language, user, onNavigate }: DiseaseScr
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1 h-12 bg-transparent">
                 <Camera className="w-4 h-4 mr-2" />
-                Take Photo
+                {takePhotoText}
               </Button>
               <Button
                 variant="outline"
@@ -147,7 +174,7 @@ export default function DiseaseScreen({ language, user, onNavigate }: DiseaseScr
                 onClick={() => setImage("/plant-disease.jpg")}
               >
                 <Upload className="w-4 h-4 mr-2" />
-                Upload
+                {chooseFromGalleryText}
               </Button>
             </div>
           )}
@@ -172,7 +199,7 @@ export default function DiseaseScreen({ language, user, onNavigate }: DiseaseScr
 
         {/* Stage */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">Growth stage</label>
+          <label className="block text-sm font-bold text-foreground mb-2">{growthStageText}</label>
           <select
             value={stage}
             onChange={(e) => setStage(e.target.value)}

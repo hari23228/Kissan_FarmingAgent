@@ -5,6 +5,10 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { ChevronLeft, TrendingUp, TrendingDown, Minus, Loader2, Mic, RefreshCw } from "lucide-react"
 import { useState, useEffect } from "react"
+import { useTranslatedText } from "@/lib/translation-utils"
+import { useLanguage } from "@/lib/language-context"
+import { translatingAiService } from "@/lib/services/translating-ai"
+
 
 interface PricesScreenProps {
   language: string
@@ -71,6 +75,7 @@ const MANDIS_BY_STATE: Record<string, string[]> = {
 }
 
 export default function PricesScreen({ language, user, onNavigate }: PricesScreenProps) {
+  const { language: currentLang } = useLanguage()
   const [step, setStep] = useState<PricesStep>("query")
   const [crop, setCrop] = useState("Tomato")
   const [quantity, setQuantity] = useState("100")
@@ -85,6 +90,96 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
   const [analysis, setAnalysis] = useState<PriceAnalysis | null>(null)
   const [aiAdvice, setAiAdvice] = useState<string | null>(null)
   const [aiLoading, setAiLoading] = useState(false)
+
+  // Translation hooks
+  const headerText = useTranslatedText('Market Prices & Selling Advice')
+  const voiceTipText = useTranslatedText('Voice tip: "Today tomato price in Coimbatore mandi"')
+  const cropText = useTranslatedText('Crop')
+  const quantityText = useTranslatedText('Quantity')
+  const stateText = useTranslatedText('State')
+  const nearestMandiText = useTranslatedText('Nearest Mandi')
+  const getPricesAdviceText = useTranslatedText('Get Prices & Advice')
+  const clearText = useTranslatedText('Clear')
+  const marketPricesText = useTranslatedText('Market Prices')
+  const averagePriceText = useTranslatedText('Average Price')
+  const rangeText = useTranslatedText('Range')
+  const recommendationText = useTranslatedText('Recommendation')
+  const sellNowText = useTranslatedText('Sell Now')
+  const holdText = useTranslatedText('Hold')
+  const waitText = useTranslatedText('Wait')
+  const aiAdviceText = useTranslatedText('AI Advice')
+  const generatingAdviceText = useTranslatedText('Generating advice...')
+  const noPricesFoundText = useTranslatedText('No prices found')
+  const nearbyMandisText = useTranslatedText('Nearby Mandis')
+  const noMandiDataText = useTranslatedText('No mandi data available')
+  const sellingRecommendationText = useTranslatedText('Selling Recommendation')
+  const estimatedEarningsText = useTranslatedText('Estimated earnings for')
+  const aiMarketAnalysisText = useTranslatedText('AI Market Analysis')
+  const readAloudText = useTranslatedText('Read aloud')
+  const explainWhyText = useTranslatedText('Explain why')
+  const compareMandisText = useTranslatedText('Compare mandis')
+  const askKisanAIText = useTranslatedText('Ask Kisan AI')
+  const gettingPricesText = useTranslatedText('Getting prices...')
+  const tryDifferentText = useTranslatedText('Try different crop or location')
+  const minText = useTranslatedText('Min')
+  const modalText = useTranslatedText('Modal')
+  const maxText = useTranslatedText('Max')
+  const varietyText = useTranslatedText('variety')
+  const kgText = useTranslatedText('kg')
+  const quintalText = useTranslatedText('quintal')
+
+
+  // Translation cache for dropdown values
+  const [translatedCrops, setTranslatedCrops] = useState<Record<string, string>>({})
+  const [translatedStates, setTranslatedStates] = useState<Record<string, string>>({})
+  const [translatedMandis, setTranslatedMandis] = useState<Record<string, string>>({})
+
+  // Translate dropdown options when language changes
+  useEffect(() => {
+    const translateDropdowns = async () => {
+      if (currentLang === 'en') {
+        setTranslatedCrops({})
+        setTranslatedStates({})
+        setTranslatedMandis({})
+        return
+      }
+
+      try {
+        // Batch translate all unique values at once
+        const allTexts = [...CROPS, ...INDIAN_STATES, ...(MANDIS_BY_STATE[state] || [])]
+        const translations = await translatingAiService.translateBatchTexts(allTexts, currentLang)
+        
+        // Build translation maps
+        const cropsMap: Record<string, string> = {}
+        const statesMap: Record<string, string> = {}
+        const mandisMap: Record<string, string> = {}
+        
+        let index = 0
+        CROPS.forEach(crop => {
+          cropsMap[crop] = translations[index++]
+        })
+        INDIAN_STATES.forEach(state => {
+          statesMap[state] = translations[index++]
+        })
+        ;(MANDIS_BY_STATE[state] || []).forEach(mandi => {
+          mandisMap[mandi] = translations[index++]
+        })
+        
+        setTranslatedCrops(cropsMap)
+        setTranslatedStates(statesMap)
+        setTranslatedMandis(mandisMap)
+      } catch (error) {
+        console.error('Error translating dropdowns:', error)
+      }
+    }
+
+    translateDropdowns()
+  }, [currentLang, state])
+
+  // Helper to get translated value
+  const getTranslated = (value: string, map: Record<string, string>) => {
+    return currentLang === 'en' ? value : (map[value] || value)
+  }
 
   // Get available mandis for selected state
   const availableMandis = MANDIS_BY_STATE[state] || []
@@ -126,7 +221,19 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
 
       setMandiPrices(data.mandiPrices || [])
       setAnalysis(data.analysis || null)
-      setAiAdvice(data.aiAdvice || null)
+      
+      // Translate AI advice if user's language is not English
+      let translatedAdvice = data.aiAdvice || null
+      if (translatedAdvice && currentLang !== 'en') {
+        try {
+          translatedAdvice = await translatingAiService.translateText(translatedAdvice, currentLang)
+        } catch (error) {
+          console.error('Error translating AI advice:', error)
+          // Keep original if translation fails
+        }
+      }
+      setAiAdvice(translatedAdvice)
+      
       setStep("result")
     } catch (err) {
       console.error('❌ Error fetching prices:', err)
@@ -153,7 +260,17 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
 
       const data = await response.json()
       if (data.aiAdvice) {
-        setAiAdvice(data.aiAdvice)
+        let translatedAdvice = data.aiAdvice
+        // Translate if user's language is not English
+        if (currentLang !== 'en') {
+          try {
+            translatedAdvice = await translatingAiService.translateText(translatedAdvice, currentLang)
+          } catch (error) {
+            console.error('Error translating AI advice:', error)
+            // Keep original if translation fails
+          }
+        }
+        setAiAdvice(translatedAdvice)
       }
     } catch (err) {
       console.error('Error getting AI advice:', err)
@@ -184,11 +301,11 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
   const getRecommendationText = (rec: string) => {
     switch (rec) {
       case 'sell_now':
-        return 'Sell Now'
+        return sellNowText
       case 'hold':
-        return 'Hold'
+        return holdText
       case 'wait':
-        return 'Wait'
+        return waitText
       default:
         return rec
     }
@@ -216,7 +333,7 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
             <ChevronLeft className="w-6 h-6" />
           </button>
           <div className="flex-1">
-            <h1 className="text-xl font-bold">Market Prices</h1>
+            <h1 className="text-xl font-bold">{marketPricesText}</h1>
             <p className="text-sm opacity-80">{crop} in {state}</p>
           </div>
           <button 
@@ -233,7 +350,7 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
           {analysis && (
             <Card className="p-4 bg-primary/5 border-primary/20">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Average Price</span>
+                <span className="text-sm text-muted-foreground">{averagePriceText}</span>
                 <span className="text-sm font-medium flex items-center gap-1">
                   {getTrendIcon(analysis.trend)}
                   {analysis.priceChange > 0 ? '+' : ''}{analysis.priceChange}%
@@ -241,37 +358,37 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
               </div>
               <p className="text-2xl font-bold text-primary">₹{analysis.avgPrice}/quintal</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Range: ₹{analysis.minPrice} - ₹{analysis.maxPrice}
+                {rangeText}: ₹{analysis.minPrice} - ₹{analysis.maxPrice}
               </p>
             </Card>
           )}
 
           {/* Mandi Price Cards */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-foreground">Nearby Mandis</h3>
+            <h3 className="font-semibold text-foreground">{nearbyMandisText}</h3>
             {mandiPrices.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No mandi data available</p>
+              <p className="text-muted-foreground text-sm">{noMandiDataText}</p>
             ) : (
               mandiPrices.map((mandiData, idx) => (
                 <Card key={idx} className="p-4">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h3 className="font-bold text-foreground">{mandiData.market}</h3>
-                      <p className="text-xs text-muted-foreground">{mandiData.variety} variety</p>
+                      <p className="text-xs text-muted-foreground">{mandiData.variety} {varietyText}</p>
                     </div>
                     {getTrendIcon(mandiData.trend)}
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-sm">
                     <div className="text-center">
-                      <p className="text-muted-foreground text-xs">Min</p>
+                      <p className="text-muted-foreground text-xs">{minText}</p>
                       <p className="font-bold text-foreground">₹{mandiData.min_price}</p>
                     </div>
                     <div className="text-center border-l border-r border-border">
-                      <p className="text-muted-foreground text-xs">Modal</p>
+                      <p className="text-muted-foreground text-xs">{modalText}</p>
                       <p className="font-bold text-primary">₹{mandiData.modal_price}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-muted-foreground text-xs">Max</p>
+                      <p className="text-muted-foreground text-xs">{maxText}</p>
                       <p className="font-bold text-foreground">₹{mandiData.max_price}</p>
                     </div>
                   </div>
@@ -283,7 +400,7 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
           {/* Recommendation Card */}
           {analysis && (
             <Card className="p-4 border-l-4 border-l-primary bg-primary/5">
-              <h3 className="font-bold text-foreground mb-3">Selling Recommendation</h3>
+              <h3 className="font-bold text-foreground mb-3">{sellingRecommendationText}</h3>
               <p className={`text-xl font-bold mb-3 ${getRecommendationColor(analysis.recommendation)}`}>
                 {getRecommendationText(analysis.recommendation)}
               </p>
@@ -296,7 +413,7 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
               {/* Estimated Earnings */}
               {quantity && analysis.avgPrice > 0 && (
                 <div className="mt-4 pt-4 border-t border-border">
-                  <p className="text-sm text-muted-foreground">Estimated earnings for {quantity} {unit}:</p>
+                  <p className="text-sm text-muted-foreground">{estimatedEarningsText} {quantity} {unit}:</p>
                   <p className="text-lg font-bold text-primary">
                     ₹{Math.round((parseInt(quantity) * analysis.avgPrice) / (unit === 'quintal' ? 1 : 100))}
                   </p>
@@ -309,7 +426,7 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
           {aiAdvice && (
             <Card className="p-4 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
               <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
-                🤖 AI Market Analysis
+                🤖 {aiMarketAnalysisText}
               </h3>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{aiAdvice}</p>
             </Card>
@@ -318,7 +435,7 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
           {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-3 pt-4">
             <Button variant="outline" className="bg-transparent">
-              Read aloud
+              {readAloudText}
             </Button>
             <Button 
               variant="outline" 
@@ -329,22 +446,22 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
               {aiLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Loading...
+                  {generatingAdviceText}
                 </>
               ) : (
-                'Explain why'
+                explainWhyText
               )}
             </Button>
           </div>
           <Button variant="outline" className="w-full bg-transparent">
-            Compare mandis
+            {compareMandisText}
           </Button>
           <Button 
             variant="outline" 
             className="w-full bg-transparent"
             onClick={() => onNavigate("assistant")}
           >
-            Ask Kisan AI
+            {askKisanAIText}
           </Button>
         </div>
       </main>
@@ -358,37 +475,37 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
         <button onClick={() => onNavigate("home")} className="hover:bg-primary/80 p-1 rounded transition-colors">
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-xl font-bold">Market Prices & Selling Advice</h1>
+        <h1 className="text-xl font-bold">{headerText}</h1>
       </div>
 
       {/* Content */}
       <div className="px-6 py-8 space-y-6 max-w-md mx-auto">
         <p className="text-sm text-muted-foreground flex items-center gap-2">
           <Mic className="w-4 h-4" />
-          Voice tip: "Today tomato price in Coimbatore mandi"
+          {voiceTipText}
         </p>
 
         {/* Crop Selection */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">Crop *</label>
+          <label className="block text-sm font-medium text-foreground mb-2">{cropText} *</label>
           <select
             value={crop}
             onChange={(e) => setCrop(e.target.value)}
             className="w-full h-12 px-3 border border-border rounded-lg bg-background text-foreground"
           >
             {CROPS.map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>{getTranslated(c, translatedCrops)}</option>
             ))}
           </select>
         </div>
 
         {/* Quantity */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">Quantity *</label>
+          <label className="block text-sm font-medium text-foreground mb-2">{quantityText} *</label>
           <div className="flex gap-2">
             <Input
               type="number"
-              placeholder="Enter quantity"
+              placeholder={quantityText}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               className="flex-1 h-12"
@@ -398,37 +515,37 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
               onChange={(e) => setUnit(e.target.value)}
               className="h-12 px-3 border border-border rounded-lg bg-background text-foreground"
             >
-              <option value="kg">kg</option>
-              <option value="quintal">quintal</option>
+              <option value="kg">{kgText}</option>
+              <option value="quintal">{quintalText}</option>
             </select>
           </div>
         </div>
 
         {/* State Selection */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">State *</label>
+          <label className="block text-sm font-medium text-foreground mb-2">{stateText} *</label>
           <select
             value={state}
             onChange={(e) => setState(e.target.value)}
             className="w-full h-12 px-3 border border-border rounded-lg bg-background text-foreground"
           >
             {INDIAN_STATES.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>{getTranslated(s, translatedStates)}</option>
             ))}
           </select>
         </div>
 
         {/* Mandi Selection */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">Nearest Mandi</label>
+          <label className="block text-sm font-medium text-foreground mb-2">{nearestMandiText}</label>
           <select
             value={mandi}
             onChange={(e) => setMandi(e.target.value)}
             className="w-full h-12 px-3 border border-border rounded-lg bg-background text-foreground"
           >
-            <option value="">All mandis in {state}</option>
+            <option value="">All mandis in {getTranslated(state, translatedStates)}</option>
             {availableMandis.map((m) => (
-              <option key={m} value={m}>{m} Mandi</option>
+              <option key={m} value={m}>{getTranslated(m, translatedMandis)} Mandi</option>
             ))}
           </select>
         </div>
@@ -450,10 +567,10 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Fetching Prices...
+                {gettingPricesText}
               </>
             ) : (
-              'Get Prices & Advice'
+              getPricesAdviceText
             )}
           </Button>
           <Button 
@@ -461,7 +578,7 @@ export default function PricesScreen({ language, user, onNavigate }: PricesScree
             className="h-12 bg-transparent px-6"
             onClick={handleClear}
           >
-            Clear
+            {clearText}
           </Button>
         </div>
       </div>
